@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
@@ -136,7 +137,17 @@ class _WebViewScreenState extends State<WebViewScreen> {
       Permission.camera,
     ].request();
 
-    _controller = WebViewController()
+    late final PlatformWebViewControllerCreationParams params;
+    if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+      params = WebKitWebViewControllerCreationParams(
+        allowsInlineMediaPlayback: true,
+        mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+      );
+    } else {
+      params = const PlatformWebViewControllerCreationParams();
+    }
+
+    _controller = WebViewController.fromPlatformCreationParams(params)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -170,7 +181,6 @@ class _WebViewScreenState extends State<WebViewScreen> {
         },
       );
 
-    // Grant microphone/camera permissions requested by websites in the WebView
     if (Platform.isAndroid) {
       final androidController =
           _controller.platform as AndroidWebViewController;
@@ -180,6 +190,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
           request.grant();
         },
       );
+    } else if (Platform.isIOS) {
+      final webKitController =
+          _controller.platform as WebKitWebViewController;
+      await webKitController.setAllowsBackForwardNavigationGestures(true);
     }
 
     await _controller.loadRequest(Uri.parse(widget.url));
