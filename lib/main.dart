@@ -5,6 +5,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 void main() {
   runApp(const WebViewAppDemo());
@@ -53,6 +54,51 @@ class _UrlInputScreenState extends State<UrlInputScreen> {
     }
   }
 
+  void _openQRScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const QRScannerScreen(),
+      ),
+    ).then((scannedUrl) {
+      if (scannedUrl != null && scannedUrl is String && scannedUrl.isNotEmpty) {
+        _showQRResultDialog(scannedUrl);
+      }
+    });
+  }
+
+  void _showQRResultDialog(String scannedUrl) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('QR Code Scanned'),
+          content: Text('Scanned URL:\n$scannedUrl'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // close dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // close dialog
+                _urlController.text = scannedUrl;
+                _navigateToWebView();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Go'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _urlController.dispose();
@@ -94,6 +140,17 @@ class _UrlInputScreenState extends State<UrlInputScreen> {
                   minimumSize: const Size.fromHeight(50),
                 ),
                 child: const Text('Go'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _openQRScanner,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Scan QR Code'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(50),
+                ),
               ),
             ],
           ),
@@ -157,6 +214,16 @@ class _WebViewScreenState extends State<WebViewScreen> {
             });
           },
           onPageFinished: (String url) {
+            // Inject JavaScript to disable scrolling
+            _controller.runJavaScript('''
+              document.body.style.overflow = 'hidden';
+              document.documentElement.style.overflow = 'hidden';
+              
+              // For mobile devices to prevent drag/scroll
+              document.body.style.touchAction = 'none';
+              document.documentElement.style.touchAction = 'none';
+            ''');
+            
             setState(() {
               _isLoading = false;
             });
@@ -233,6 +300,39 @@ class _WebViewScreenState extends State<WebViewScreen> {
           : const Center(
               child: CircularProgressIndicator(),
             ),
+    );
+  }
+}
+
+class QRScannerScreen extends StatefulWidget {
+  const QRScannerScreen({super.key});
+
+  @override
+  State<QRScannerScreen> createState() => _QRScannerScreenState();
+}
+
+class _QRScannerScreenState extends State<QRScannerScreen> {
+  bool _isScanned = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scan QR Code'),
+      ),
+      body: MobileScanner(
+        onDetect: (BarcodeCapture capture) {
+          if (_isScanned) return;
+          final List<Barcode> barcodes = capture.barcodes;
+          for (final barcode in barcodes) {
+            if (barcode.rawValue != null) {
+              _isScanned = true;
+              Navigator.pop(context, barcode.rawValue);
+              break;
+            }
+          }
+        },
+      ),
     );
   }
 }
