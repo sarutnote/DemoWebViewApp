@@ -150,12 +150,19 @@ class _BotSetupScreenState extends State<BotSetupScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Expanded(
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade300,
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                                  child: ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                                    child: Image.asset(
+                                      'avatar/$vrm.png',
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.topCenter,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: Colors.grey.shade300,
+                                          child: const Icon(Icons.person, color: Colors.grey, size: 40),
+                                        );
+                                      },
                                     ),
-                                    child: const Icon(Icons.person, color: Colors.grey, size: 40),
                                   ),
                                 ),
                                 Padding(
@@ -207,14 +214,30 @@ class _BotSetupScreenState extends State<BotSetupScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.person, color: Colors.grey, size: 32),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: _selectedVrm != null
+                  ? Image.asset(
+                      'avatar/$_selectedVrm.png',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.person, color: Colors.grey, size: 32),
+                        );
+                      },
+                    )
+                  : Container(
+                      width: 60,
+                      height: 60,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.person, color: Colors.grey, size: 32),
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
